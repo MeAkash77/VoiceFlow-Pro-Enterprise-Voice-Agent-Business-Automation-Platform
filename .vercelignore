@@ -1,0 +1,15 @@
+frontend/
+backend/
+agents/
+node_modules/
+.git/
+.env*
+docker-compose.yml
+Dockerfile*
+*.log
+.DS_Store
+serve-landing.js
+package-lock.json
+yarn.lock
+.gitignore
+.dockerignore

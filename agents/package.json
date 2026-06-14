@@ -1,0 +1,11 @@
+{
+  "name": "@voiceflow-pro/agents",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "python main.py",
+    "lint": "black . && flake8 .",
+    "type-check": "mypy ."
+  },
+  "description": "LiveKit Python agents for VoiceFlow Pro"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "voiceflow-pro",
+  "version": "1.0.0",
+  "description": "Business Automation Voice Agent with LiveKit and AssemblyAI Universal-Streaming",
+  "private": true,
+
+  "scripts": {
+    "build": "echo 'Static landing page - no build needed'",
+    "start": "echo 'Static site deployed'",
+    "dev": "node serve-landing.js"
+  },
+
+  "keywords": [
+    "voice-agent",
+    "livekit",
+    "assemblyai",
+    "business-automation",
+    "webrtc"
+  ],
+  "author": "Jagatab.UK",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sreejagatab/VoiceFlow-Pro-demo"
+  }
+}

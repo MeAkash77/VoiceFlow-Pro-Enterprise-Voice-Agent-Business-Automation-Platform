@@ -70,8 +70,8 @@ interface PerformanceAlert {
 
 export class AnalyticsService extends EventEmitter {
   private db: DatabaseClient;
-  private redis: Redis | null;
-  private redisSubscriber: Redis | null;
+  private redis: Redis.Redis | null;
+  private redisSubscriber: Redis.Redis | null;
   private connectedClients: Set<WebSocket>;
   private metricsInterval: NodeJS.Timeout | null;
   private businessMetricsInterval: NodeJS.Timeout | null;
@@ -117,8 +117,10 @@ export class AnalyticsService extends EventEmitter {
     try {
       // Initialize Redis connections
       const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-      this.redis = new Redis(redisUrl);
-      this.redisSubscriber = new Redis(redisUrl);
+      // Use type assertion to help TypeScript understand the import
+      const RedisClient = Redis as any;
+      this.redis = new RedisClient(redisUrl);
+      this.redisSubscriber = new RedisClient(redisUrl);
       
       // Start real-time metrics collection
       this.startMetricsCollection();

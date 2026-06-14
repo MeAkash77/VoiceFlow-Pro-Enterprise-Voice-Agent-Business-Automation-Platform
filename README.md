@@ -2,6 +2,8 @@
 
 🎯 **Next-Generation AI Business Automation Voice Agent with LiveKit and AssemblyAI Universal-Streaming**
 
+<img width="950" height="440" alt="Image" src="https://github.com/user-attachments/assets/26e678d6-547b-4c61-b95f-b00f91a5dd31" />
+
 [![🌟 Main Entry Point](https://img.shields.io/badge/🌟_MAIN_ENTRY_POINT-Landing_Page-blue?style=for-the-badge)](./landing-page.html)
 [![Get Started](https://img.shields.io/badge/🚀_Get_Started-Try_Now-ff69b4?style=for-the-badge)](http://localhost:3000)
 [![Demo Video](https://img.shields.io/badge/🎬_Demo_Video-Watch_Now-red?style=for-the-badge)](./VoiceFlow%20Pro%20-%20Business%20Automation%20Voice%20Agent%20-%20Google%20Chrome%202025-07-27%2016-23-50.mp4)

@@ -70,7 +70,8 @@ interface PerformanceAlert {
 
 export class AnalyticsService extends EventEmitter {
   private db: DatabaseClient;
-  private redis: Redis;
+  private redis: InstanceType<typeof Redis> | null;
+  private redisSubscriber: InstanceType<typeof Redis> | null;
   private connectedClients: Set<WebSocket>;
   private metricsInterval: NodeJS.Timeout | null;
   private businessMetricsInterval: NodeJS.Timeout | null;
@@ -103,7 +104,8 @@ export class AnalyticsService extends EventEmitter {
   constructor() {
     super();
     this.db = new DatabaseClient();
-    this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    this.redis = null;
+    this.redisSubscriber = null;
     this.connectedClients = new Set();
     this.metricsInterval = null;
     this.businessMetricsInterval = null;
@@ -111,8 +113,13 @@ export class AnalyticsService extends EventEmitter {
     this.initializeAnalytics();
   }
 
-  private async initializeAnalytics() {
+  private async initializeAnalytics(): Promise<void> {
     try {
+      // Initialize Redis connections
+      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+      this.redis = new Redis(redisUrl);
+      this.redisSubscriber = new Redis(redisUrl);
+      
       // Start real-time metrics collection
       this.startMetricsCollection();
       
@@ -128,12 +135,15 @@ export class AnalyticsService extends EventEmitter {
     }
   }
 
-  private startMetricsCollection() {
+  private startMetricsCollection(): void {
     // Collect metrics every 10 seconds
     this.metricsInterval = setInterval(async () => {
       try {
         const metrics = await this.collectConversationMetrics();
         this.realtimeMetrics.push(metrics);
+        
+        // Save to database
+        await this.saveMetricsSnapshot(metrics);
         
         // Keep only last 1000 data points (about 2.7 hours at 10s intervals)
         if (this.realtimeMetrics.length > 1000) {
@@ -152,7 +162,7 @@ export class AnalyticsService extends EventEmitter {
     }, 10000);
   }
 
-  private startBusinessMetricsCalculation() {
+  private startBusinessMetricsCalculation(): void {
     // Calculate business metrics every 5 minutes
     this.businessMetricsInterval = setInterval(async () => {
       try {
@@ -164,13 +174,13 @@ export class AnalyticsService extends EventEmitter {
     }, 5 * 60 * 1000);
   }
 
-  private subscribeToEvents() {
+  private subscribeToEvents(): void {
+    if (!this.redisSubscriber) return;
+    
     // Subscribe to Redis channels for real-time events
-    const subscriber = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+    this.redisSubscriber.subscribe('audio_metrics', 'sentiment_update', 'escalation_event');
     
-    subscriber.subscribe('audio_metrics', 'sentiment_update', 'escalation_event');
-    
-    subscriber.on('message', (channel: string, message: string) => {
+    this.redisSubscriber.on('message', (channel: string, message: string) => {
       try {
         const data = JSON.parse(message);
         
@@ -264,6 +274,8 @@ export class AnalyticsService extends EventEmitter {
 
   private async calculateAverageAudioQuality(): Promise<number> {
     try {
+      if (!this.redis) return 0.8;
+      
       // Get cached audio quality metrics from Redis
       const cached = await this.redis.get('avg_audio_quality');
       if (cached) {
@@ -432,7 +444,7 @@ export class AnalyticsService extends EventEmitter {
     }
   }
 
-  private handleSentimentUpdate(data: any) {
+  private handleSentimentUpdate(data: any): void {
     const sentimentData: SentimentData = {
       timestamp: new Date().toISOString(),
       sentiment: data.sentiment || 0,
@@ -451,7 +463,7 @@ export class AnalyticsService extends EventEmitter {
     this.broadcastToClients('sentiment_update', { sentiment: sentimentData });
   }
 
-  private async handleEscalationEvent(data: any) {
+  private async handleEscalationEvent(data: any): Promise<void> {
     try {
       // Calculate escalation analytics
       const escalationData = await this.calculateEscalationAnalytics();
@@ -489,7 +501,7 @@ export class AnalyticsService extends EventEmitter {
     }
   }
 
-  private async checkPerformanceThresholds(metrics: ConversationMetrics) {
+  private async checkPerformanceThresholds(metrics: ConversationMetrics): Promise<void> {
     const alerts: PerformanceAlert[] = [];
     
     // Check latency thresholds
@@ -594,7 +606,7 @@ export class AnalyticsService extends EventEmitter {
     this.performanceAlerts = this.performanceAlerts.slice(0, 100);
   }
 
-  public addClient(ws: WebSocket) {
+  public addClient(ws: WebSocket): void {
     this.connectedClients.add(ws);
     
     // Send initial data to new client
@@ -623,7 +635,7 @@ export class AnalyticsService extends EventEmitter {
     });
   }
 
-  private handleClientMessage(ws: WebSocket, data: any) {
+  private handleClientMessage(ws: WebSocket, data: any): void {
     switch (data.type) {
       case 'subscribe':
         // Client subscribing to specific channels
@@ -638,7 +650,7 @@ export class AnalyticsService extends EventEmitter {
     }
   }
 
-  private async sendHistoricalData(ws: WebSocket, timeRange: string) {
+  private async sendHistoricalData(ws: WebSocket, timeRange: string): Promise<void> {
     try {
       let interval: string;
       
@@ -723,7 +735,7 @@ export class AnalyticsService extends EventEmitter {
     }
   }
 
-  private broadcastToClients(type: string, data: any) {
+  private broadcastToClients(type: string, data: any): void {
     const message = JSON.stringify({ type, ...data });
     
     this.connectedClients.forEach(client => {
@@ -738,7 +750,7 @@ export class AnalyticsService extends EventEmitter {
     });
   }
 
-  public async saveMetricsSnapshot(metrics: ConversationMetrics) {
+  public async saveMetricsSnapshot(metrics: ConversationMetrics): Promise<void> {
     try {
       const query = `
         INSERT INTO analytics_snapshots (
@@ -761,7 +773,7 @@ export class AnalyticsService extends EventEmitter {
     }
   }
 
-  public updateThresholds(newThresholds: Partial<typeof this.thresholds>) {
+  public updateThresholds(newThresholds: Partial<typeof this.thresholds>): void {
     this.thresholds = { ...this.thresholds, ...newThresholds };
     console.log('Updated performance thresholds:', this.thresholds);
   }
@@ -770,7 +782,7 @@ export class AnalyticsService extends EventEmitter {
     return this.connectedClients.size;
   }
 
-  public cleanup() {
+  public async cleanup(): Promise<void> {
     if (this.metricsInterval) {
       clearInterval(this.metricsInterval);
     }
@@ -780,6 +792,13 @@ export class AnalyticsService extends EventEmitter {
     }
     
     this.connectedClients.clear();
-    this.redis.disconnect();
+    
+    if (this.redis) {
+      await this.redis.disconnect();
+    }
+    
+    if (this.redisSubscriber) {
+      await this.redisSubscriber.disconnect();
+    }
   }
 }

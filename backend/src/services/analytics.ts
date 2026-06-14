@@ -70,8 +70,8 @@ interface PerformanceAlert {
 
 export class AnalyticsService extends EventEmitter {
   private db: DatabaseClient;
-  private redis: InstanceType<typeof Redis> | null;
-  private redisSubscriber: InstanceType<typeof Redis> | null;
+  private redis: Redis | null;
+  private redisSubscriber: Redis | null;
   private connectedClients: Set<WebSocket>;
   private metricsInterval: NodeJS.Timeout | null;
   private businessMetricsInterval: NodeJS.Timeout | null;
@@ -794,11 +794,11 @@ export class AnalyticsService extends EventEmitter {
     this.connectedClients.clear();
     
     if (this.redis) {
-      await this.redis.disconnect();
+      await this.redis.quit();
     }
     
     if (this.redisSubscriber) {
-      await this.redisSubscriber.disconnect();
+      await this.redisSubscriber.quit();
     }
   }
 }
